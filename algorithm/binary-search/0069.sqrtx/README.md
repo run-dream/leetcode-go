@@ -1,3 +1,4 @@
+[sqrx](https://leetcode.com/problems/sqrtx/)
 1. 基本思路
 一个数 x 的开方 sqrt 一定在 0 ~ x 之间，并且满足 sqrt == x / sqrt 。可以利用二分查找在 0 ~ x 之间查找 sqrt。
 
