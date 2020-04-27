@@ -5,7 +5,7 @@ func search(array []int, key int) int {
 	low := 0
 	high := len(array) - 1
 	for low <= high {
-		mid := low + (high-low)/2
+		mid := low + (high-low)/2p
 		if array[mid] == key {
 			return mid
 		} else if array[mid] < key {
