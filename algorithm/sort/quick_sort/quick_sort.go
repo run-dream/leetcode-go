@@ -1,4 +1,4 @@
-package quick_sort
+package quicksort
 
 func quickSort(arr []int) {
 	quickSortRecu(arr, 0, len(arr)-1)
@@ -10,16 +10,16 @@ func quickSortRecu(arr []int, left int, right int) {
 	}
 	pivot := partition(arr, left, right)
 	quickSortRecu(arr, left, pivot-1)
-	quickSortRecu(arr, left+1, right)
+	quickSortRecu(arr, pivot+1, right)
 }
 
 func partition(arr []int, left, right int) int {
 	pivot := arr[right]
 	i := left
-	for j := left; j < right-1; j++ {
+	for j := left; j <= right-1; j++ {
 		if arr[j] < pivot {
 			arr[i], arr[j] = arr[j], arr[i]
-			i += 1
+			i++
 		}
 	}
 	arr[i], arr[right] = arr[right], arr[i]

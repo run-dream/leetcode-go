@@ -1,4 +1,4 @@
-package quick_sort
+package quicksort
 
 import "testing"
 
