@@ -10,6 +10,11 @@ type Trie struct {
 	root *TrieNode
 }
 
+// NewTrieNode 新增节点
+func NewTrieNode(b byte, isWordEnd bool) *TrieNode {
+	return &TrieNode{b, [26]*TrieNode{}, isWordEnd}
+}
+
 func byteToInt(b byte) int {
 	return int(b - byte('a'))
 }
@@ -17,36 +22,23 @@ func byteToInt(b byte) int {
 func (t *Trie) Insert(str string) *Trie {
 	cursor := t.root
 	for i := 0; i < len(str); i++ {
-		cursor = cursor.children[byteToInt(str[i])]
-		if cursor == nil {
-			cursor = &TrieNode{str[i], [26]*TrieNode{}, i == len(str)-1}
+		next := cursor.children[byteToInt(str[i])]
+		if next == nil {
+			cursor.children[byteToInt(str[i])] = NewTrieNode(str[i], false)
+			next = cursor.children[byteToInt(str[i])]
 		}
+		cursor = next
 	}
+	cursor.isWordEnd = true
 	return t
 }
 
 func (t *Trie) Remove(str string) *Trie {
 	cursor := t.root
-	var prev *TrieNode
-	var char byte
 	for i := 0; i < len(str); i++ {
-		current := cursor
 		cursor = cursor.children[byteToInt(str[i])]
-		if cursor.isWordEnd && i != len(str)-1 {
-			prev = current
-			char = str[i]
-		}
 	}
-	hasNext := false
-	for i := 0; i < len(cursor.children); i++ {
-		if cursor.children[i] != nil {
-			hasNext = true
-			break
-		}
-	}
-	if !hasNext {
-		prev.children[byteToInt(char)] = nil
-	}
+	cursor.isWordEnd = false
 	return t
 }
 
@@ -58,5 +50,5 @@ func (t *Trie) Match(str string) bool {
 			return false
 		}
 	}
-	return true
+	return cursor.isWordEnd
 }
