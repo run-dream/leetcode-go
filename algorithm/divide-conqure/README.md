@@ -21,3 +21,16 @@
 6. 二分查找算法
 7. 利用递归树求解算法复杂度的思想
 8. 分布式数据库利用分片技术做数据处理
+
+
+### 伪代码
+``` 
+Divide-and-Conqure(P)
+if |P| <= n0
+    then return(ADHOC(P))
+for i <- 1 to k
+    do yi <- Divide-and-Conqure(Pi)
+T <- Merge(y1, y2,...,yk)
+return T
+```
+其中，|P| 表示问题 P 的规模，n0 为一阈值，表示当问题 P 的规模不超过 n0 时，问题已容易直接解出，不必再继续分解。ADHOC(P) 是该分治法中的基本子算法，用于直接解小规模的问题 P。因此，当 P 的规模不超过n0 时直接用算法 ADHOC(P) 求解。算法 MERGE(y1,y2,…,yk) 是该分治法中的合并子算法，用于将 P 的子问题 P1 ,P2 ,…,Pk 的相应的解 y1 , y2 ,…, yk 合并为 P 的解。
