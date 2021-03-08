@@ -1,13 +1,13 @@
-package problem0145
+package problem0094
 
 import (
 	"testing"
 )
 
 func TestSolve(t *testing.T) {
-	t.Log(postorderTraversal(MakeTree([]int{1, -1, 2, -1, -1, 3, -1})))
-	t.Log(postorderTraversal(MakeTree([]int{})))
-	t.Log(postorderTraversal(MakeTree([]int{1})))
+	t.Log(inorderTraversal(MakeTree([]int{1, -1, 2, -1, -1, 3, -1})))
+	t.Log(inorderTraversal(MakeTree([]int{})))
+	t.Log(inorderTraversal(MakeTree([]int{1})))
 }
 
 func MakeTree(vals []int) *TreeNode {
