@@ -2,10 +2,10 @@ package problem1014
 
 func maxScoreSightseeingPair(values []int) int {
 	n := len(values)
-	cur, res := 0, 0
-	for i := 0; i < n; i++ {
-		res = max(res, cur+values[i])
-		cur = max(cur, values[i]) - 1
+	left, res := values[n-1]-n-1, 0
+	for i := n - 2; i >= 0; i-- {
+		left = max(left, values[i+1]-i-1)
+		res = max(res, left+values[i]+i)
 	}
 	return res
 }
