@@ -1,16 +1,12 @@
-package problem0145
+package problem0102
 
 import (
+	"fmt"
 	"testing"
 )
 
 func TestSolve(t *testing.T) {
-	t.Log(postorderTraversal(MakeTree([]int{1, -1, 2, -1, -1, 3, -1})))
-	t.Log(postorderTraversal(MakeTree([]int{})))
-	t.Log(postorderTraversal(MakeTree([]int{1})))
-	t.Log(postorderTraversalLoop(MakeTree([]int{1, -1, 2, -1, -1, 3, -1})))
-	t.Log(postorderTraversalLoop(MakeTree([]int{})))
-	t.Log(postorderTraversalLoop(MakeTree([]int{1})))
+	t.Log(levelOrder(MakeTree([]int{3, 9, 20, -1, -1, 15, 7})))
 }
 
 func MakeTree(vals []int) *TreeNode {
@@ -29,6 +25,7 @@ func MakeTree(vals []int) *TreeNode {
 		if nodes[i] == nil {
 			continue
 		}
+		fmt.Print(i)
 		nodes[i].Left = nodes[i*2+1]
 		nodes[i].Right = nodes[i*2+2]
 	}
