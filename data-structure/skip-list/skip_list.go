@@ -2,177 +2,260 @@ package skiplist
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 )
 
+// 常量
 const (
 	// MaxLevel 最高层数
-	MaxLevel = 16
+	MaxLevel = 32
+	// 每一层的晋升概率
+	Probability = 0.25
 )
+
+// LevelNode 索引节点
+type LevelNode struct {
+	forward *Node
+	span    int
+}
+
+// 新建索引节点
+func newLevelNode() *LevelNode {
+	return &LevelNode{nil, 0}
+}
 
 // Node 跳表节点结构体
 type Node struct {
-	//跳表保存的值
-	v interface{}
-	//用于排序的分值
-	score int
-	//层高
-	level int
-	//每层前进指针
-	forwards []*Node
+	// 跳表保存的关键字
+	ele string
+	// 用于排序的分值
+	score float64
+	// 后续节点
+	backward *Node
+	// 节点的所有索引节点
+	levels []*LevelNode
 }
 
 // 新建跳表节点
-func newSkipListNode(v interface{}, score, level int) *Node {
-	return &Node{v: v, score: score, forwards: make([]*Node, level, level), level: level}
+func newNode(level int, score float64, ele string) *Node {
+	levels := make([]*LevelNode, MaxLevel)
+	for i := 0; i < MaxLevel; i++ {
+		levels[i] = newLevelNode()
+	}
+	return &Node{ele, score, nil, levels}
 }
 
-//SkipList 跳表结构体
+// SkipList 跳表结构体
 type SkipList struct {
-	//跳表头结点
-	head *Node
+	//跳表头节点和尾节点
+	head, tail *Node
 	//跳表当前层数
 	level int
 	//跳表长度
 	length int
 }
 
-//NewSkipList 实例化跳表对象
+// NewSkipList 实例化跳表对象
 func NewSkipList() *SkipList {
-	//头结点，便于操作
-	head := newSkipListNode(0, math.MinInt32, MaxLevel)
-	return &SkipList{head, 1, 0}
+	//头节点，便于操作
+	head := newNode(MaxLevel, 0.0, "")
+	return &SkipList{head, nil, 1, 0}
 }
 
-//Length 获取跳表长度
-func (sl *SkipList) Length() int {
-	return sl.length
+// Length 获取跳表长度
+func (this *SkipList) Length() int {
+	return this.length
 }
 
-//Level 获取跳表层级
-func (sl *SkipList) Level() int {
-	return sl.level
+// Level 获取跳表层级
+func (this *SkipList) Level() int {
+	return this.level
 }
 
-//Insert 插入节点到跳表中
-func (sl *SkipList) Insert(v interface{}, score int) int {
-	if nil == v {
-		return 1
-	}
-
-	//查找插入位置
-	cur := sl.head
-	//记录每层的路径
-	update := [MaxLevel]*Node{}
-	i := MaxLevel - 1
-	for ; i >= 0; i-- {
-		for nil != cur.forwards[i] {
-			if cur.forwards[i].v == v {
-				// 已存在
-				return 2
-			}
-			if cur.forwards[i].score > score {
-				update[i] = cur
-				break
-			}
-			cur = cur.forwards[i]
-		}
-		if nil == cur.forwards[i] {
-			update[i] = cur
-		}
-	}
-
-	//通过随机算法获取该节点层数
+// RandomLevel 获取一个随机的层级 返回值的范围是 [1, MaxLevel]
+func randomLevel() int {
 	level := 1
-	for i := 1; i < MaxLevel; i++ {
-		if rand.Int31()%7 == 1 {
-			level++
-		}
+	for rand.Float64() < Probability && level < MaxLevel {
+		level += 1
 	}
-
-	//创建一个新的跳表节点
-	newNode := newSkipListNode(v, score, level)
-
-	//原有节点连接
-	for i := 0; i <= level-1; i++ {
-		next := update[i].forwards[i]
-		update[i].forwards[i] = newNode
-		newNode.forwards[i] = next
-	}
-
-	//如果当前节点的层数大于之前跳表的层数
-	//更新当前跳表层数
-	if level > sl.level {
-		sl.level = level
-	}
-
-	//更新跳表长度
-	sl.length++
-
-	return 0
+	return level
 }
 
-//Find 查找
-func (sl *SkipList) Find(v interface{}, score int) *Node {
-	if nil == v || sl.length == 0 {
+// Insert 插入节点到跳表中
+func (this *SkipList) Insert(ele string, score float64) *Node {
+	if len(ele) == 0 {
 		return nil
 	}
 
-	cur := sl.head
-	for i := sl.level - 1; i >= 0; i-- {
-		for nil != cur.forwards[i] {
-			if cur.forwards[i].score == score && cur.forwards[i].v == v {
-				return cur.forwards[i]
-			} else if cur.forwards[i].score > score {
-				break
-			}
-			cur = cur.forwards[i]
+	cur := this.head
+	// 在各个层查找节点的插入位置，也就是目标节点的上一个节点
+	update := make([]*Node, MaxLevel)
+	// 用来计算span的值
+	rank := make([]int, MaxLevel)
+	// 遍历完以后, cur 就是之后要插入到第0层的位置的下一个节点
+	for i := this.level - 1; i >= 0; i-- {
+		if i < this.level-1 {
+			rank[i] = rank[i+1]
 		}
+
+		for cur.levels[i].forward != nil && (cur.levels[i].forward.score < score || (cur.levels[i].forward.score == score && cur.levels[i].forward.ele < ele)) {
+			rank[i] += cur.levels[i].span
+			cur = cur.levels[i].forward
+		}
+		update[i] = cur
 	}
 
-	return nil
+	// 通过随机算法获取该节点层数
+	level := randomLevel()
+
+	// 如果新节点的层数比表中其他节点的层数都要大
+	// 那么初始化表头节点中未使用的层，并将它们记录到 update 数组中
+	// 将来也指向新节点
+	if level > this.level {
+		// 初始化未使用层
+		for i := this.level; i < level; i++ {
+			rank[i] = 0
+			update[i] = this.head
+			update[i].levels[i].span = this.length
+		}
+
+		// 更新表中节点最大层数
+		this.level = level
+	}
+
+	// 创建一个新的跳表节点
+	node := newNode(level, score, ele)
+	// 将前面记录的指针指向新节点，并做相应的设置
+	for i := 0; i < level; i++ {
+		// 设置新节点的 forward 指针
+		node.levels[i].forward = update[i].levels[i].forward
+		// 将沿途记录的各个节点的 forward 指针指向新节点
+		update[i].levels[i].forward = node
+		// 计算新节点跨越的节点数量
+		node.levels[i].span = update[i].levels[i].span - (rank[0] - rank[i])
+		// 更新新节点插入之后，沿途节点的 span 值
+		update[i].levels[i].span = (rank[0] - rank[i]) + 1
+	}
+
+	// 未接触的节点的 span 值也需要增一，这些节点直接从表头指向新节点
+	for i := level; i < this.level; i++ {
+		update[i].levels[i].span++
+	}
+
+	// 设置新节点的后退指针
+	if update[0] != this.head {
+		node.backward = update[0]
+	} else {
+		node.backward = nil
+	}
+
+	// 处理尾节点
+	if node.levels[0].forward != nil {
+		node.levels[0].forward.backward = node
+	} else {
+		this.tail = node
+	}
+
+	//更新跳表长度
+	this.length++
+
+	return node
 }
 
-//Delete 删除节点
-func (sl *SkipList) Delete(v interface{}, score int) int {
-	if nil == v {
-		return 1
+// Delete 删除节点
+func (this *SkipList) Delete(ele string, score float64) bool {
+	cur := this.head
+	// 在各个层查找节点的插入位置，也就是目标节点的上一个节点
+	update := make([]*Node, MaxLevel)
+	// 按照索引从上向下查找节点
+	for i := this.level - 1; i >= 0; i-- {
+		for cur.levels[i].forward != nil && (cur.levels[i].forward.score < score || (cur.levels[i].forward.score == score && cur.levels[i].forward.ele < ele)) {
+			cur = cur.levels[i].forward
+		}
+		update[i] = cur
 	}
 
-	//查找前驱节点
-	cur := sl.head
-	//记录前驱路径
-	update := [MaxLevel]*Node{}
-	for i := sl.level - 1; i >= 0; i-- {
-		update[i] = sl.head
-		for nil != cur.forwards[i] {
-			if cur.forwards[i].score == score && cur.forwards[i].v == v {
-				update[i] = cur
-				break
-			}
-			cur = cur.forwards[i]
-		}
+	node := cur.levels[0].forward
+	if node != nil && node.score == score && node.ele == ele {
+		this.deleteNode(node, update)
+		return true
 	}
+	return false
+}
 
-	cur = update[0].forwards[0]
-	for i := cur.level - 1; i >= 0; i-- {
-		if update[i] == sl.head && cur.forwards[i] == nil {
-			sl.level = i
-		}
-
-		if nil == update[i].forwards[i] {
-			update[i].forwards[i] = nil
+// 删除具体的节点
+func (this *SkipList) deleteNode(node *Node, update []*Node) {
+	// 更新所有和被删除节点有关的节点的指针，解除它们之间的关系
+	for i := 0; i < this.level; i++ {
+		// 合并节点
+		if update[i].levels[i].forward == node {
+			update[i].levels[i].span += node.levels[i].span - 1
+			update[i].levels[i].forward = node.levels[i].forward
 		} else {
-			update[i].forwards[i] = update[i].forwards[i].forwards[i]
+			update[i].levels[i].span -= 1
 		}
 	}
 
-	sl.length--
+	// 更新被删除节点的前进和后退指针
+	if node.levels[0].forward != nil {
+		node.levels[0].forward.backward = node.backward
+	} else {
+		// 最后一个节点则更新tail指针
+		this.tail = node.backward
+	}
 
-	return 0
+	// 更新跳跃表最大层数（只在被删除节点是跳跃表中最高的节点时才执行）
+	for this.level > 1 && this.head.levels[this.level-1].forward == nil {
+		this.level--
+	}
+
+	this.length--
 }
 
-func (sl *SkipList) String() string {
-	return fmt.Sprintf("level:%+v, length:%+v", sl.level, sl.length)
+// isInRange 快速判断是否可能有节点
+func (this *SkipList) isInRange(min, max float64) bool {
+	if min > max {
+		return false
+	}
+	if this.tail == nil || this.tail.score < min {
+		return false
+	}
+	if first := this.head.levels[0].forward; first == nil || first.score > max {
+		return false
+	}
+	return true
+}
+
+// GetRange 根据分值区间查找节点, 简化一下问题，只考虑闭区间
+func (this *SkipList) GetRange(min, max float64) (begin, end *Node) {
+	if !this.isInRange(min, max) {
+		return nil, nil
+	}
+	cur := this.head.levels[0].forward
+	for i := this.level - 1; i >= 0; i-- {
+		for cur.levels[i].forward != nil && cur.levels[i].forward.score < min {
+			cur = cur.levels[i].forward
+		}
+	}
+	if cur.levels[0].forward == nil {
+		begin = cur
+	} else {
+		begin = cur.levels[0].forward
+	}
+	cur = this.head.levels[0].forward
+	for i := this.level - 1; i >= 0; i-- {
+		for cur.levels[i].forward != nil && (cur.levels[i].forward.score <= max) {
+			cur = cur.levels[i].forward
+		}
+	}
+	if cur.levels[0].forward == nil && cur.score <= max {
+		end = cur
+	} else {
+		end = cur.backward
+	}
+	return begin, end
+}
+
+func (this *SkipList) String() string {
+	return fmt.Sprintf("level:%+v, length:%+v", this.level, this.length)
 }

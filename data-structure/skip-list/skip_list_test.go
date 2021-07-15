@@ -1,38 +1,35 @@
 package skiplist
 
-import "testing"
+import (
+	"fmt"
+	"strconv"
+	"testing"
+)
 
 func TestSkipList(t *testing.T) {
 	sl := NewSkipList()
 
-	sl.Insert("leo", 95)
-	t.Log(sl.head.forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0])
-	t.Log(sl)
-	t.Log("-----------------------------")
+	for i := 0; i < 10000; i++ {
+		sl.Insert(strconv.Itoa(i), float64(i))
+	}
+	t.Log(sl.level)
+	head, tail := sl.GetRange(1000, 1005)
+	Traverse(head, tail)
 
-	sl.Insert("jack", 88)
-	t.Log(sl.head.forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0].forwards[0])
-	t.Log(sl)
-	t.Log("-----------------------------")
+	sl.Delete("1002", 1002)
+	head, tail = sl.GetRange(1000, 1005)
+	Traverse(head, tail)
+}
 
-	sl.Insert("lily", 100)
-	t.Log(sl.head.forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0].forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0].forwards[0].forwards[0])
-	t.Log(sl)
-	t.Log("-----------------------------")
-
-	t.Log(sl.Find("jack", 88))
-	t.Log("-----------------------------")
-
-	sl.Delete("leo", 95)
-	t.Log(sl.head.forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0])
-	t.Log(sl.head.forwards[0].forwards[0].forwards[0])
-	t.Log(sl)
-	t.Log("-----------------------------")
+func Traverse(head *Node, tail *Node) {
+	fmt.Println("BEGIN")
+	cur := head
+	for cur != tail {
+		fmt.Println("Traverse", cur.ele, cur.score)
+		cur = cur.levels[0].forward
+	}
+	if cur != nil && cur == tail {
+		fmt.Println("Traverse", cur.ele, cur.score)
+	}
+	fmt.Println("END")
 }
