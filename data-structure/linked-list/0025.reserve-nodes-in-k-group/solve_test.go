@@ -1,9 +1,11 @@
 package problem0025
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSolve(t *testing.T) {
-	t.Log(reverseKGroup(buildList([]int{1, 2, 3, 4, 5}), 2))
+	showList(t, reverseKGroup(buildList([]int{1, 2, 3, 4, 5}), 3))
 }
 
 func buildList(nums []int) *ListNode {
@@ -17,4 +19,11 @@ func buildList(nums []int) *ListNode {
 		cur = cur.Next
 	}
 	return head
+}
+
+func showList(t *testing.T, head *ListNode) {
+	for head != nil {
+		t.Log(head.Val)
+		head = head.Next
+	}
 }

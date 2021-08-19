@@ -10,28 +10,29 @@ func reverseKGroup(head *ListNode, k int) *ListNode {
 	if head == nil || k < 2 {
 		return head
 	}
-	// 判断长度是不是够
+	// 找到第k个元素
 	ptr := head
-	for i := 0; i < k; i++ {
+	for i := 0; i < k-1; i++ {
 		ptr = ptr.Next
 		if ptr == nil {
 			return head
 		}
 	}
 
+	nextHead := ptr.Next
+	ptr.Next = nil
+
 	// 反转head后k个元素
-	var prev, next *ListNode
+	var prev *ListNode
 	cur := head
-	for i := 0; i < k && cur != nil; i++ {
-		next = cur.Next
+	for cur != nil {
+		next := cur.Next
 		cur.Next = prev
 		prev = cur
 		cur = next
 	}
 
-	if cur != nil {
-		head.Next = reverseKGroup(next, k)
-	}
+	head.Next = reverseKGroup(nextHead, k)
 
 	return prev
 }
